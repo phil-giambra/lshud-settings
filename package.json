@@ -1,0 +1,24 @@
+{
+  "name": "lshud-settings",
+  "productName": "lshud-settings",
+  "version": "1.0.0",
+  "description": "Settings hud for linux-system-hud",
+  "main": "",
+  "scripts": {
+    "start": ""
+  },
+  "repository": "https://github.com/phil-giambra/lshud-settings",
+  "keywords": [
+    "linux-system-hud",
+    "xorg",
+    "desktop",
+    "xserver",
+    "system",
+    "utility"
+  ],
+  "bin": {},
+  "author": "Phil Giambra",
+  "license": "MIT",
+  "devDependencies": {},
+  "dependencies": {}
+}
