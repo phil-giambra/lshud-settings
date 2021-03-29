@@ -1,6 +1,7 @@
 
 let setting_nav_select = document.getElementById('setting_nav_select')
 setting_nav_select.addEventListener("change",handleSettingSwap)
+let settings_hud_list_cont = document.getElementById('settings_hud_list_cont')
 
 let win_bounds
 
@@ -35,14 +36,32 @@ fromMain.request_hud_defs = function(data){
 
 function updateHudList(){
     let str = `<option value="lshud-settings">General</option>`
+    let str_list = ""
     for (let h in hdef){
+        console.log("hdef ", hdef[h]);
         if (h !== "lshud-settings"){
             str += `<option value="${h}">${hdef[h].name}</option>`
+
+            let checked = ""
+            //if (hdef[h].active === true) { checked = "checked"}
+            let swch = SF.switch_box_html.replace("replace_id", h+"_active" )
+            swch = swch.replace("replace_class", "list_switch_active")
+            swch = swch.replace("replace_checked", checked)
+            str_list += `<p> hello ${hdef[h].name} ${swch} </p>`
         }
+
 
     }
     setting_nav_select.innerHTML = str
+    settings_hud_list_cont.innerHTML = str_list
+    let addlist = document.getElementsByClassName("list_switch_active");
+    for (var i = 0; i < addlist.length; i++) {
+        addlist[i].addEventListener("change", handleHudSettingChange);
+    }
+
 }
+
+
 
 let viewid = "lshud-settings"
 function handleSettingSwap(e){
@@ -67,6 +86,37 @@ function handleSettingSwap(e){
         lsh.send("hud_window",{type:"request_browser_view", hudid: hudid, view:bv  })
     }
 }
+
+
+function handleHudSettingChange(event) {
+    console.log("handleHudActiveChange", event.target.id );
+    let parts = event.target.id.split("_")
+    let hid = parts.shift()
+    let value
+    let itype = SF.BYID(event.target.id).type
+    if (itype === "checkbox") {
+        value = SF.BYID(event.target.id).checked
+    }
+    else if (itype === "number") {
+        value = parseInt(SF.BYID(event.target.id).value)
+        if (String(value) === "NaN") {
+            console.log("handleHudSettingChange --- invalid number input" );
+            return;
+        }
+    }
+    else {
+        value = SF.BYID(event.target.id).value
+    }
+
+    let sets = {
+        hudid:hid,
+        itype:itype,
+        key:parts.join("_"),
+        value: value
+    }
+    lsh.send("hud_window",{ type:"setting_change", hudid: hudid,  change:sets })
+}
+
 
 //-----------------------window buttons----------------------------------------
 // menu and main button listeners
