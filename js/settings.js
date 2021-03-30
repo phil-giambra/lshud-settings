@@ -1,9 +1,16 @@
 
 let setting_nav_select = document.getElementById('setting_nav_select')
 setting_nav_select.addEventListener("change",handleSettingSwap)
-let settings_hud_list_cont = document.getElementById('settings_hud_list_cont')
+let cs_selected_cont = document.getElementById('cs_selected_cont')
 
 let win_bounds
+let viewid = "lshud-settings"
+let hdef = {}
+
+// disable default top panel behavour
+SF.hoverbar.removeEventListener("mouseenter",SF.hoverbarShowPanel)
+SF.top_panel.removeEventListener("mouseleave",SF.hoverbarHidePanel)
+
 
 fromMain.start_realtime_data = function(data){
     console.log("start_realtime_data");
@@ -26,13 +33,27 @@ fromMain.position_size_update_pass = function(data){
     win_bounds = data.bounds
 }
 
-let hdef = {}
 
+// any time a huds config changes (other than the app object) we will get this event
+// we will just set and reparse the hdefs
 fromMain.request_hud_defs = function(data){
     console.log("request_hud_defs");
     hdef = data.data
     updateHudList()
 }
+
+// when any changes are made to the app object of a huds config this event will happen
+// we will update the local hdef and if this huds settings are up we will reload the browserView
+fromMain.app_setting_change = function(data){
+    console.log("settings_change_update", data);
+    if (data.change.hudid === viewid) {
+        lsh.send("hud_window",{type:"request_browser_view", hudid: hudid, reload:viewid })
+    }
+    hdef[data.change.hudid].app = data.app
+
+}
+
+
 
 function updateHudList(){
     let str = `<option value="lshud-settings">General</option>`
@@ -40,38 +61,56 @@ function updateHudList(){
     for (let h in hdef){
         console.log("hdef ", hdef[h]);
         if (h !== "lshud-settings"){
-            str += `<option value="${h}">${hdef[h].name}</option>`
+            let checked = {active:"",is_hidden:"", is_pinned:"", viewid:"", selected:""}
+            if (h === viewid) {
+                checked.viewid = "cs_selected"
+                checked.selected = "selected"
+            }
+            if (hdef[h].active === true) { checked.active = "checked"}
+            if (hdef[h].is_hidden === true) { checked.is_hidden = "checked"}
+            if (hdef[h].is_pinned === true) { checked.is_pinned = "checked"}
 
-            let checked = ""
-            //if (hdef[h].active === true) { checked = "checked"}
-            let swch = SF.switch_box_html.replace("replace_id", h+"_active" )
-            swch = swch.replace("replace_class", "list_switch_active")
-            swch = swch.replace("replace_checked", checked)
-            str_list += `<p> hello ${hdef[h].name} ${swch} </p>`
+            str += `<option value="${h}" ${checked.selected}>${hdef[h].name}</option>`
+            let swch = SF.switch_box_html.replace("replace_id", `${h}_active`)
+            swch = swch.replace("replace_class", "list_switch_key")
+            swch = swch.replace("replace_checked", checked.active)
+            let swch2 = SF.switch_box_html.replace("replace_id", `${h}_is_hidden` )
+            swch2 = swch2.replace("replace_class", "list_switch_key")
+            swch2 = swch2.replace("replace_checked", checked.is_hidden)
+            swch2 = swch2.replace("On", "Hide").replace("Off", "Show")
+            let swch3 = SF.switch_box_html.replace("replace_id", `${h}_is_pinned` )
+            swch3 = swch3.replace("replace_class", "list_switch_key")
+            swch3 = swch3.replace("replace_checked", checked.is_pinned)
+            swch3 = swch3.replace("On", "Pin").replace("Off", "Un-Pin")
+            str_list += `<p class="commom_settings ${checked.viewid}" id="cs_${h}">
+            &nbsp;&nbsp; ${swch}&nbsp;&nbsp;${swch2}&nbsp;&nbsp;${swch3}
+            </p>`
         }
 
 
     }
     setting_nav_select.innerHTML = str
-    settings_hud_list_cont.innerHTML = str_list
-    let addlist = document.getElementsByClassName("list_switch_active");
+    cs_selected_cont.innerHTML = str_list
+    let addlist = document.getElementsByClassName("list_switch_key");
     for (var i = 0; i < addlist.length; i++) {
-        addlist[i].addEventListener("change", handleHudSettingChange);
+        addlist[i].addEventListener("change", SF.handleHudSettingChange);
     }
 
 }
 
 
 
-let viewid = "lshud-settings"
+
 function handleSettingSwap(e){
     console.log("handleSettingSwap",setting_nav_select.value);
     let hud_to_view = setting_nav_select.value
-
+    let cs_blocks = document.getElementsByClassName("commom_settings");
     if (hud_to_view === "lshud-settings") {
         // hide remove any active browser_views
         lsh.send("hud_window",{type:"request_browser_view", hudid: hudid, remove:hud_to_view })
         viewid = hud_to_view
+        for (let i = 0; i < cs_blocks.length; i++) { cs_blocks[i].classList.remove("cs_selected") };
+
     } else {
         // request a browser_view from main
         viewid = hud_to_view
@@ -84,38 +123,16 @@ function handleSettingSwap(e){
             "dev_tools": false
             }
         lsh.send("hud_window",{type:"request_browser_view", hudid: hudid, view:bv  })
+        for (let i = 0; i < cs_blocks.length; i++) {
+            let bid = cs_blocks[i].id.replace("cs_", "")
+            console.log(bid);
+            if (bid = viewid){ cs_blocks[i].classList.add("cs_selected")  }
+            else { cs_blocks[i].classList.remove("cs_selected") }
+        };
     }
 }
 
 
-function handleHudSettingChange(event) {
-    console.log("handleHudActiveChange", event.target.id );
-    let parts = event.target.id.split("_")
-    let hid = parts.shift()
-    let value
-    let itype = SF.BYID(event.target.id).type
-    if (itype === "checkbox") {
-        value = SF.BYID(event.target.id).checked
-    }
-    else if (itype === "number") {
-        value = parseInt(SF.BYID(event.target.id).value)
-        if (String(value) === "NaN") {
-            console.log("handleHudSettingChange --- invalid number input" );
-            return;
-        }
-    }
-    else {
-        value = SF.BYID(event.target.id).value
-    }
-
-    let sets = {
-        hudid:hid,
-        itype:itype,
-        key:parts.join("_"),
-        value: value
-    }
-    lsh.send("hud_window",{ type:"setting_change", hudid: hudid,  change:sets })
-}
 
 
 //-----------------------window buttons----------------------------------------

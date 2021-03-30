@@ -9,7 +9,7 @@
     "y":100,
     "width":600 ,
     "height": 600,
-    "frame":true,
+    "frame":false,
     "transparent":false,
     "resizable":true,
     "subscribe":[],
