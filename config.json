@@ -19,6 +19,6 @@
     "is_pinned":false,
     "always_on_top":false,
     "show_on_startup":true,
-    "open_dev_tools":true,
+    "open_dev_tools":false,
     "app":{}
     }
