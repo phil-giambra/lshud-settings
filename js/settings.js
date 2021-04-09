@@ -2,6 +2,9 @@
 let setting_nav_select = document.getElementById('setting_nav_select')
 setting_nav_select.addEventListener("change",handleSettingSwap)
 let cs_selected_cont = document.getElementById('cs_selected_cont')
+let settings_shared = document.getElementById('settings_shared')
+let settings_general = document.getElementById('settings_general')
+
 
 let win_bounds
 let viewid = "lshud-settings"
@@ -90,7 +93,7 @@ function updateHudList(){
 
     }
     setting_nav_select.innerHTML = str
-    cs_selected_cont.innerHTML = str_list
+    settings_shared.innerHTML = str_list
     let addlist = document.getElementsByClassName("list_switch_key");
     for (var i = 0; i < addlist.length; i++) {
         addlist[i].addEventListener("change", SF.handleHudSettingChange);
@@ -110,15 +113,16 @@ function handleSettingSwap(e){
         lsh.send("hud_window",{type:"request_browser_view", hudid: hudid, remove:hud_to_view })
         viewid = hud_to_view
         for (let i = 0; i < cs_blocks.length; i++) { cs_blocks[i].classList.remove("cs_selected") };
-
+        settings_general.style.display = "block"
+        settings_shared.style.display = "none"
     } else {
         // request a browser_view from main
         viewid = hud_to_view
         let bv = {
             "name":hud_to_view,
             "url":`file://${hdef[hud_to_view].path}/settings.html`,
-            "bounds":{ "x": 0, "y": 60, "width": win_bounds.width, "height": win_bounds.height - 60   },
-            "auto_resize": {"width":true, "height":true},
+            "bounds":{ "x":0, "y": 60, "width": Math.floor(win_bounds.width/2), "height": win_bounds.height - 60   },
+            "auto_resize": {"horizontal":true, "height":true},
             "auto_load" :true,
             "dev_tools": false
             }
@@ -129,6 +133,8 @@ function handleSettingSwap(e){
             if (bid = viewid){ cs_blocks[i].classList.add("cs_selected")  }
             else { cs_blocks[i].classList.remove("cs_selected") }
         };
+        settings_general.style.display = "none"
+        settings_shared.style.display = "block"
     }
 }
 
